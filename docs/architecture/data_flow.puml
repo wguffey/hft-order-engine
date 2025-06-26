@@ -1,0 +1,60 @@
+@startuml Data Flow
+
+' Define actors and systems
+actor "Market Data Provider" as MDP
+actor "Trader" as Trader
+actor "Analyst" as Analyst
+
+boundary "Market Data Feed" as MDF
+control "Market Data Handler" as MDH
+entity "Order Book" as OB
+entity "Analytics Engine" as AE
+database "Time Series DB" as TSDB
+
+' Define data flows
+MDP -> MDF : 1. Raw Market Data
+MDF -> MDH : 2. Parsed Market Messages
+MDH -> OB : 3. Order Updates
+OB -> OB : 4. Match Orders
+OB -> AE : 5. Book State Updates
+AE -> TSDB : 6. Store Metrics
+AE -> Analyst : 7. Market Insights
+OB -> Trader : 8. Book Visualization
+
+' Order flow
+Trader -> OB : 9. Submit Order
+OB -> Trader : 10. Order Status/Fills
+
+' Detailed processing steps
+note right of MDF
+  - Parse binary/text feed
+  - Normalize data format
+  - Validate message integrity
+  - Sequence number checks
+  - Timestamp recording
+end note
+
+note right of MDH
+  - Route to correct order book
+  - Convert to internal format
+  - Apply business rules
+  - Log message activity
+end note
+
+note right of OB
+  - Update price levels
+  - Match orders
+  - Generate trades
+  - Calculate imbalance
+  - Maintain order history
+end note
+
+note right of AE
+  - Calculate VWAP
+  - Detect price anomalies
+  - Measure liquidity
+  - Compute order flow metrics
+  - Generate signals
+end note
+
+@enduml 

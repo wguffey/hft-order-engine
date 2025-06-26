@@ -1,0 +1,74 @@
+@startuml Python Bindings
+
+package "C++ Core" {
+  class Order
+  class OrderBook
+  class Trade
+  class MarketDataFeed
+  class MarketDataHandler
+}
+
+package "Pybind11 Bindings" {
+  class "PYBIND11_MODULE(core)" as PyModule {
+    + bind_enums()
+    + bind_order()
+    + bind_trade()
+    + bind_orderbook()
+    + bind_marketdata()
+  }
+}
+
+package "Python API" {
+  class "orderbook.Order" as PyOrder
+  class "orderbook.OrderBook" as PyOrderBook
+  class "orderbook.Trade" as PyTrade
+  class "orderbook.MarketDataFeed" as PyMarketDataFeed
+  class "orderbook.Side" as PySide
+  class "orderbook.OrderType" as PyOrderType
+  class "orderbook.OrderStatus" as PyOrderStatus
+}
+
+package "Python Extensions" {
+  class "orderbook.analytics" as PyAnalytics {
+    + calculate_vwap()
+    + calculate_imbalance()
+    + detect_anomalies()
+    + estimate_market_impact()
+  }
+  
+  class "orderbook.visualization" as PyVis {
+    + plot_orderbook()
+    + plot_time_series()
+    + plot_heatmap()
+    + create_dashboard()
+  }
+  
+  class "orderbook.strategy" as PyStrategy {
+    + Strategy (base class)
+    + BacktestEngine
+    + PerformanceMetrics
+    + RiskManagement
+  }
+}
+
+' Binding relationships
+Order --> PyModule : exposed via
+OrderBook --> PyModule : exposed via
+Trade --> PyModule : exposed via
+MarketDataFeed --> PyModule : exposed via
+MarketDataHandler --> PyModule : exposed via
+
+PyModule --> PyOrder : creates
+PyModule --> PyOrderBook : creates
+PyModule --> PyTrade : creates
+PyModule --> PyMarketDataFeed : creates
+PyModule --> PySide : creates
+PyModule --> PyOrderType : creates
+PyModule --> PyOrderStatus : creates
+
+' Python API relationships
+PyOrderBook --> PyAnalytics : provides data to
+PyOrderBook --> PyVis : provides data to
+PyOrderBook --> PyStrategy : provides data to
+
+@enduml 

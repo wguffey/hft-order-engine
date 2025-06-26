@@ -1,0 +1,57 @@
+@startuml System Architecture
+
+' Define the components
+package "C++ Core" {
+  [Order Book Engine] as OBE
+  [Market Data Feed] as MDF
+  [Order Management] as OM
+  [Trade Execution] as TE
+  [Analytics Engine] as AE
+  
+  database "Memory-Mapped Storage" as MMS
+}
+
+package "Python Bindings" {
+  [Pybind11 Wrapper] as PB
+}
+
+package "Python API" {
+  [OrderBook API] as API
+  [Visualization] as VIS
+  [Strategy Framework] as SF
+  [Backtesting] as BT
+}
+
+package "External Systems" {
+  [Market Data Sources] as MDS
+  [Trading Platforms] as TP
+}
+
+' Define the relationships
+MDS --> MDF : Market Data
+MDF --> OBE : Updates
+OBE --> OM : Order Status
+OM --> TE : Executions
+TE --> OBE : Trades
+OBE --> AE : Book State
+AE --> MMS : Metrics Storage
+
+' C++ to Python bridge
+OBE --> PB : Exposes
+MDF --> PB : Exposes
+OM --> PB : Exposes
+TE --> PB : Exposes
+AE --> PB : Exposes
+
+' Python API
+PB --> API : Wraps
+API --> VIS : Provides Data
+API --> SF : Provides Data
+API --> BT : Provides Data
+SF --> OM : Strategy Orders
+BT --> OBE : Historical Simulation
+
+' External connections
+API --> TP : Trading Signals
+
+@enduml 

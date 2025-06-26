@@ -1,0 +1,81 @@
+@startuml Deployment Architecture
+
+' Define nodes
+node "Development Environment" as DevEnv {
+  artifact "Source Code" as SrcCode
+  artifact "CMake Build System" as CMake
+  artifact "Docker Compose" as DockerCompose
+  
+  SrcCode --> CMake : builds with
+  CMake --> DockerCompose : configured by
+}
+
+node "Docker Build Environment" as BuildEnv {
+  artifact "Builder Image" as BuilderImage {
+    artifact "C++ Compiler" as Compiler
+    artifact "Python Dev" as PyDev
+    artifact "Pybind11" as Pybind
+  }
+  
+  artifact "Build Artifacts" as BuildArtifacts
+  
+  Compiler --> BuildArtifacts : compiles
+  PyDev --> BuildArtifacts : packages
+  Pybind --> BuildArtifacts : binds
+}
+
+node "Docker Runtime Environment" as RunEnv {
+  artifact "Runtime Image" as RuntimeImage {
+    artifact "C++ Runtime" as CppRuntime
+    artifact "Python Runtime" as PyRuntime
+    artifact "OrderBook Library" as OBLib
+  }
+  
+  CppRuntime --> OBLib : executes
+  PyRuntime --> OBLib : imports
+}
+
+node "Testing Environment" as TestEnv {
+  artifact "Unit Tests" as UnitTests
+  artifact "Integration Tests" as IntegTests
+  artifact "Performance Tests" as PerfTests
+}
+
+node "Production Environment" as ProdEnv {
+  artifact "Market Data Service" as MDService
+  artifact "Analytics Service" as AnalyticsService
+  artifact "API Service" as APIService
+  
+  MDService --> AnalyticsService : feeds data
+  AnalyticsService --> APIService : provides metrics
+}
+
+' Define relationships
+DevEnv --> BuildEnv : builds
+BuildEnv --> RunEnv : produces
+BuildEnv --> TestEnv : validates
+RunEnv --> ProdEnv : deploys to
+
+' Add notes
+note right of BuildEnv
+  Multi-stage Docker build:
+  1. Builder stage compiles C++ code
+  2. Builder stage builds Python bindings
+  3. Runtime stage copies only necessary artifacts
+end note
+
+note right of RunEnv
+  Runtime image is optimized for size and performance:
+  - Only includes runtime dependencies
+  - Pre-compiled libraries
+  - Optimized configurations
+end note
+
+note right of ProdEnv
+  Production deployment options:
+  - Kubernetes for orchestration
+  - Docker Swarm for simpler deployments
+  - Bare metal for ultra-low latency
+end note
+
+@enduml 

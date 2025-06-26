@@ -1,0 +1,178 @@
+@startuml Class Diagram
+
+' Enums
+enum Side {
+  BUY
+  SELL
+}
+
+enum OrderType {
+  LIMIT
+  MARKET
+  STOP
+  STOP_LIMIT
+  IOC
+  FOK
+}
+
+enum OrderStatus {
+  NEW
+  PARTIALLY_FILLED
+  FILLED
+  CANCELED
+  REJECTED
+  EXPIRED
+}
+
+' Core classes
+class Order {
+  - id_: OrderId
+  - symbol_: string
+  - price_: Price
+  - quantity_: Quantity
+  - remaining_quantity_: Quantity
+  - side_: Side
+  - type_: OrderType
+  - status_: OrderStatus
+  - timestamp_: Timestamp
+  + Order(id, symbol, price, quantity, side, type, timestamp)
+  + getId(): OrderId
+  + getSymbol(): string
+  + getPrice(): Price
+  + getQuantity(): Quantity
+  + getRemainingQuantity(): Quantity
+  + getSide(): Side
+  + getType(): OrderType
+  + getStatus(): OrderStatus
+  + getTimestamp(): Timestamp
+  + fill(quantity): void
+  + cancel(): void
+}
+
+class Trade {
+  - id_: TradeId
+  - symbol_: string
+  - price_: Price
+  - quantity_: Quantity
+  - maker_order_id_: OrderId
+  - taker_order_id_: OrderId
+  - timestamp_: Timestamp
+  + Trade(id, symbol, price, quantity, maker_id, taker_id, timestamp)
+  + getId(): TradeId
+  + getSymbol(): string
+  + getPrice(): Price
+  + getQuantity(): Quantity
+  + getMakerOrderId(): OrderId
+  + getTakerOrderId(): OrderId
+  + getTimestamp(): Timestamp
+  + getValue(): int64_t
+}
+
+class PriceLevel {
+  - price_: Price
+  - total_quantity_: Quantity
+  - orders_: list<Order>
+  + addOrder(order): void
+  + removeOrder(order_id): bool
+  + isEmpty(): bool
+  + getPrice(): Price
+  + getTotalQuantity(): Quantity
+  + getOrders(): list<Order>
+}
+
+class OrderBook {
+  - symbol_: string
+  - bids_: map<Price, PriceLevel>
+  - asks_: map<Price, PriceLevel>
+  - order_lookup_: unordered_map<OrderId, pair<Side, Price>>
+  - trade_callback_: TradeCallback
+  - update_callback_: OrderBookUpdateCallback
+  - next_trade_id_: atomic<TradeId>
+  + OrderBook(symbol)
+  + getSymbol(): string
+  + addOrder(order): vector<Trade>
+  + cancelOrder(order_id): bool
+  + modifyOrder(order_id, new_price, new_quantity): bool
+  + getTopOfBook(): TopOfBook
+  + getDepth(levels): pair<vector<PriceLevel>, vector<PriceLevel>>
+  + registerTradeCallback(callback): void
+  + registerOrderBookUpdateCallback(callback): void
+  + calculateOrderFlowImbalance(depth): double
+  + getAllOrders(): vector<Order>
+  + clear(): void
+  - matchOrder(order): vector<Trade>
+  - notifyTradeCallback(trade): void
+  - notifyOrderBookUpdateCallback(): void
+}
+
+class MarketDataMessage {
+  - type_: Type
+  + getType(): Type
+}
+
+class MarketDataHandler {
+  + handleMessage(message): void
+}
+
+class MarketDataFeed {
+  + start(): void
+  + stop(): void
+  + subscribe(symbol): void
+  + unsubscribe(symbol): void
+  + registerHandler(handler): void
+  + {static} create(type, config): unique_ptr<MarketDataFeed>
+}
+
+class BaseMarketDataFeed {
+  # message_queue_: queue<unique_ptr<MarketDataMessage>>
+  # processing_thread_: thread
+  # mutex_: mutex
+  # condition_: condition_variable
+  # running_: atomic<bool>
+  # subscribed_symbols_: unordered_set<string>
+  # handlers_: vector<MarketDataHandler*>
+  + start(): void
+  + stop(): void
+  + subscribe(symbol): void
+  + unsubscribe(symbol): void
+  + registerHandler(handler): void
+  # dispatchMessage(message): void
+  # processMessages(): void
+}
+
+class WebSocketMarketDataFeed {
+  - url_: string
+  + WebSocketMarketDataFeed(url)
+  # processMessages(): void
+}
+
+class MarketDataHandlerImpl {
+  - order_books_: unordered_map<string, shared_ptr<OrderBook>>
+  - mutex_: mutex
+  + handleMessage(message): void
+  + registerOrderBook(symbol, book): void
+  + unregisterOrderBook(symbol): void
+  + getOrderBook(symbol): shared_ptr<OrderBook>
+}
+
+' Relationships
+Order -- Side
+Order -- OrderType
+Order -- OrderStatus
+
+OrderBook o-- PriceLevel
+OrderBook -- Order
+OrderBook -- Trade
+
+PriceLevel o-- Order
+
+MarketDataFeed <|-- BaseMarketDataFeed
+BaseMarketDataFeed <|-- WebSocketMarketDataFeed
+
+MarketDataHandler <|-- MarketDataHandlerImpl
+MarketDataHandlerImpl o-- OrderBook
+
+MarketDataFeed -- MarketDataMessage
+MarketDataHandler -- MarketDataMessage
+
+@enduml 

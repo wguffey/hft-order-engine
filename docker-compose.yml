@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # Development environment with source code mounted
+  dev:
+    build:
+      context: .
+      target: builder  # Use the builder stage for development
+    volumes:
+      - .:/app
+      - build-cache:/app/build  # Persist build artifacts
+    command: bash
+    stdin_open: true
+    tty: true
+    environment:
+      - PYTHONPATH=/app
+      - CMAKE_BUILD_PARALLEL_LEVEL=4
+
+  # Python example service
+  python-example:
+    build:
+      context: .
+    command: python3 /app/examples/python_example.py
+    volumes:
+      - ./examples:/app/examples  # Mount examples for quick iteration
+
+  # C++ example service
+  cpp-example:
+    build:
+      context: .
+    command: /app/build/examples/simple_order_book
+
+  # Run tests
+  tests:
+    build:
+      context: .
+    command: /app/build/tests/test_order_book
+
+  # Jupyter notebook for analysis
+  jupyter:
+    build:
+      context: .
+      target: builder  # Use the builder stage for Jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/app
+      - build-cache:/app/build  # Persist build artifacts
+    command: >
+      jupyter notebook 
+      --ip=0.0.0.0 
+      --port=8888 
+      --no-browser 
+      --allow-root 
+      --NotebookApp.token='' 
+      --NotebookApp.password=''
+    environment:
+      - PYTHONPATH=/app
+
+  # Benchmark service
+  benchmark:
+    build:
+      context: .
+    command: /app/build/tests/benchmark_order_book
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+
+volumes:
+  build-cache:  # Persistent volume for build artifacts
